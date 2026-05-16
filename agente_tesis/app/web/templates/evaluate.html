@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cargar evaluacion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <p class="tag">Carga individual</p>
+        <h1>Cargar evaluacion</h1>
+        <p class="subtitle">Selecciona un estudiante y carga una actividad a la vez.</p>
+      </header>
+      <nav class="tabs">
+        <a href="{{ url_for('students_page') }}">Estudiantes</a>
+        <a href="{{ url_for('evaluate_page') }}">Evaluacion</a>
+        <a href="{{ url_for('report_page') }}">Informe</a>
+        <a href="{{ url_for('history_page') }}">Historial</a>
+      </nav>
+
+      {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Buscar estudiante</h2>
+        </div>
+        <form action="{{ url_for('evaluate_page') }}" method="get" class="history-filter">
+          <select name="course_filter">
+            <option value="">Todos los cursos</option>
+            {% for course in allowed_courses %}
+            <option value="{{ course }}" {% if course_filter == course %}selected{% endif %}>{{ course }}</option>
+            {% endfor %}
+          </select>
+          <input type="search" name="student_filter" value="{{ student_filter }}" placeholder="Nombre o codigo del estudiante" />
+          <button type="submit" class="btn ghost">Buscar</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <form action="{{ url_for('evaluate') }}" method="post" enctype="multipart/form-data" class="form">
+          <input type="hidden" name="course_filter" value="{{ course_filter }}" />
+          <label>
+            Estudiante
+            <select name="student_id" required>
+              <option value="">Selecciona un estudiante</option>
+              {% for student in students %}
+              <option value="{{ student['id'] }}" {% if selected_student_id|string == student['id']|string %}selected{% endif %}>
+                {{ student["course_name"] }} - {{ student["student_name"] }} ({{ student["student_code"] }})
+              </option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="grid two">
+            <label>Nombre de la evaluacion <input type="text" name="activity_name" value="{{ activity_name }}" required /></label>
+            <label>
+              Tipo de actividad
+              <select name="activity_type" required>
+                {% for item in ["Taller", "Quiz", "Parcial", "Proyecto", "Laboratorio", "Otro"] %}
+                <option value="{{ item }}" {% if activity_type == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+          <div class="grid two">
+            <label>Semestre <input type="text" name="semester" value="{{ semester }}" required /></label>
+            <label>Nota maxima <input type="number" name="max_score" step="0.5" min="1" max="100" value="{{ max_score }}" /></label>
+          </div>
+          <label>Rubrica de la actividad <textarea name="rubric_text" rows="7" required>{{ rubric_text }}</textarea></label>
+          <label>Imagen de la evaluacion <input type="file" name="code_image" accept=".jpg,.jpeg,.png,.webp" required /></label>
+          <button type="submit" class="btn primary">Evaluar actividad</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

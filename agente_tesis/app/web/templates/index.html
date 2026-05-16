@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Evaluador OCR de Codigo Manuscrito</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <p class="tag">OCR.Space</p>
+        <h1>Evaluador de Codigo Manuscrito</h1>
+        <p class="subtitle">Gestiona cursos, estudiantes y evaluaciones con historial por curso.</p>
+      </header>
+
+      {% if message %}<div class="alert alert-ok">{{ message }}</div>{% endif %}
+      {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+      {% if eval_id %}<div class="alert alert-ok">Evaluacion guardada con ID {{ eval_id }}.</div>{% endif %}
+
+      <nav class="tabs">
+        <a href="#estudiantes">Estudiantes</a>
+        <a href="#evaluacion">Evaluacion</a>
+        <a href="#resultado">Resultado</a>
+        <a href="#historial">Historial</a>
+      </nav>
+
+      <section id="estudiantes" class="panel">
+        <div class="panel-head">
+          <h2>Listado de estudiantes</h2>
+        </div>
+        <form action="{{ url_for('create_student') }}" method="post" class="form">
+          <div class="grid two">
+            <label>
+              Nombre del estudiante
+              <input type="text" name="student_name" required />
+            </label>
+            <label>
+              Codigo
+              <input type="text" name="student_code" required />
+            </label>
+          </div>
+          <div class="grid two">
+            <label>
+              Curso
+              <input type="text" name="course_name" required />
+            </label>
+            <label>
+              Descripcion del curso
+              <input type="text" name="course_description" />
+            </label>
+          </div>
+          <button type="submit" class="btn primary">Guardar estudiante</button>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>Codigo</th>
+                <th>Curso</th>
+                <th>Descripcion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in students %}
+              <tr>
+                <td>{{ student["student_name"] }}</td>
+                <td>{{ student["student_code"] }}</td>
+                <td>{{ student["course_name"] }}</td>
+                <td>{{ student["course_description"] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="evaluacion" class="panel">
+        <div class="panel-head">
+          <h2>Cargar actividad</h2>
+          <a href="{{ url_for('new_evaluation') }}" class="btn ghost">Limpiar</a>
+        </div>
+
+        <form action="{{ url_for('evaluate') }}" method="post" enctype="multipart/form-data" class="form">
+          <input type="hidden" name="filter_name" value="{{ filter_name }}" />
+          <input type="hidden" name="course_filter" value="{{ course_filter }}" />
+          <label>
+            Estudiante
+            <select name="student_id" required>
+              <option value="">Selecciona un estudiante</option>
+              {% for student in students %}
+              <option value="{{ student['id'] }}" {% if selected_student_id|string == student['id']|string %}selected{% endif %}>
+                {{ student["course_name"] }} - {{ student["student_name"] }} ({{ student["student_code"] }})
+              </option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <div class="grid two">
+            <label>
+              Nombre de la evaluacion
+              <input type="text" name="activity_name" value="{{ activity_name }}" required />
+            </label>
+            <label>
+              Tipo de actividad
+              <select name="activity_type" required>
+                {% for item in ["Taller", "Quiz", "Parcial", "Proyecto", "Laboratorio", "Otro"] %}
+                <option value="{{ item }}" {% if activity_type == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Semestre
+              <input type="text" name="semester" value="{{ semester }}" required />
+            </label>
+            <label>
+              Nota maxima
+              <input type="number" name="max_score" step="0.5" min="1" max="100" value="{{ max_score }}" />
+            </label>
+          </div>
+
+          <label>
+            Rubrica de la actividad
+            <textarea name="rubric_text" rows="7" required>{{ rubric_text }}</textarea>
+          </label>
+
+          <label>
+            Imagen de la evaluacion
+            <input type="file" name="code_image" accept=".jpg,.jpeg,.png,.webp" required />
+          </label>
+
+          <button type="submit" class="btn primary">Evaluar actividad</button>
+        </form>
+      </section>
+
+      <section id="resultado" class="panel">
+        <h2>Resultado</h2>
+        {% if result %}
+        <div class="score">Nota final: <strong>{{ "%.2f"|format(result.score) }} / {{ "%.2f"|format(result.max_score) }}</strong></div>
+        <h3>Retroalimentacion</h3>
+        <p>{{ result.feedback }}</p>
+        <div class="grid two">
+          <div>
+            <h3>Fortalezas</h3>
+            <ul>{% for item in result.strengths %}<li>{{ item }}</li>{% endfor %}</ul>
+          </div>
+          <div>
+            <h3>Oportunidades de mejora</h3>
+            <ul>{% for item in result.improvements %}<li>{{ item }}</li>{% endfor %}</ul>
+          </div>
+        </div>
+        <h3>Desglose por rubrica</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Criterio</th><th>Puntaje</th><th>Maximo</th><th>Comentario</th></tr>
+            </thead>
+            <tbody>
+              {% for row in result.rubric_breakdown %}
+              <tr><td>{{ row.get("criterion", "") }}</td><td>{{ row.get("score", "") }}</td><td>{{ row.get("max", "") }}</td><td>{{ row.get("comment", "") }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <details>
+          <summary>Ver transcripcion OCR</summary>
+          <pre>{{ result.code_transcription }}</pre>
+        </details>
+        {% else %}
+        <p>No hay resultado cargado en esta sesion.</p>
+        {% endif %}
+      </section>
+
+      <section id="historial" class="panel">
+        <h2>Historial</h2>
+        <form action="{{ url_for('index') }}" method="get" class="history-filter">
+          <input type="text" name="filter_name" placeholder="Filtrar estudiante" value="{{ filter_name }}" />
+          <select name="course_filter">
+            <option value="">Todos los cursos</option>
+            {% for course in courses %}
+            <option value="{{ course['course_name'] }}" {% if course_filter == course['course_name'] %}selected{% endif %}>
+              {{ course["course_name"] }}
+            </option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn ghost">Filtrar</button>
+        </form>
+
+        <div class="stats-row">
+          <div class="stat"><span class="stat-label">Evaluaciones visibles</span><strong class="stat-value">{{ total_evaluations }}</strong></div>
+          <div class="stat"><span class="stat-label">Estudiantes visibles</span><strong class="stat-value">{{ total_students }}</strong></div>
+        </div>
+
+        <h3>Resumen por estudiante</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Curso</th><th>Estudiante</th><th>Codigo</th><th>Evaluaciones</th><th>Promedio</th><th>Mejor nota</th><th>Ultima fecha</th></tr>
+            </thead>
+            <tbody>
+              {% for row in summary %}
+              <tr><td>{{ row["course_name"] }}</td><td>{{ row["student_name"] }}</td><td>{{ row["student_code"] }}</td><td>{{ row["evaluations"] }}</td><td>{{ row["avg_score"] }}</td><td>{{ row["best_score"] }}</td><td>{{ row["last_date"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Alertas de no mejora</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Curso</th><th>Estudiante</th><th>Codigo</th><th>Semestre</th><th>Ultima actividad</th><th>Ultimas 3 notas</th><th>Alerta</th></tr>
+            </thead>
+            <tbody>
+              {% for row in alerts %}
+              <tr class="row-alert"><td>{{ row["course_name"] }}</td><td>{{ row["student_name"] }}</td><td>{{ row["student_code"] }}</td><td>{{ row["semester"] }}</td><td>{{ row["last_activity"] }}</td><td>{{ row["recent_scores"] }}</td><td>{{ row["alert"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Evaluaciones recientes</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Curso</th><th>Estudiante</th><th>Codigo</th><th>Evaluacion</th><th>Tipo</th><th>Semestre</th><th>Nota</th><th>Fecha</th></tr>
+            </thead>
+            <tbody>
+              {% for row in history %}
+              <tr><td>{{ row["id"] }}</td><td>{{ row["course_name"] }}</td><td>{{ row["student_name"] }}</td><td>{{ row["student_code"] }}</td><td>{{ row["activity_name"] }}</td><td>{{ row["activity_type"] }}</td><td>{{ row["semester"] }}</td><td>{{ row["score"] }} / {{ row["max_score"] }}</td><td>{{ row["created_at"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

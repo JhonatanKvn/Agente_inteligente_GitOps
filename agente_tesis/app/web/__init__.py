@@ -1,0 +1,2 @@
+"""Capa web Flask."""
+

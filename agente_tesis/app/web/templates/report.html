@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Informe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <p class="tag">Informe academico</p>
+        <h1>Informe de evaluacion</h1>
+        <p class="subtitle">Retroalimentacion punto por punto y resumen de rendimiento.</p>
+      </header>
+      <nav class="tabs">
+        <a href="{{ url_for('students_page') }}">Estudiantes</a>
+        <a href="{{ url_for('evaluate_page') }}">Evaluacion</a>
+        <a href="{{ url_for('report_page') }}">Informe</a>
+        <a href="{{ url_for('history_page') }}">Historial</a>
+      </nav>
+
+      {% if message %}<div class="alert alert-ok">{{ message }}</div>{% endif %}
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Buscar informe</h2>
+        </div>
+        <form action="{{ url_for('report_page') }}" method="get" class="history-filter">
+          <select name="course_filter">
+            <option value="">Todos los cursos</option>
+            {% for course in allowed_courses %}
+            <option value="{{ course }}" {% if course_filter == course %}selected{% endif %}>{{ course }}</option>
+            {% endfor %}
+          </select>
+          <input type="search" name="student_filter" value="{{ student_filter }}" placeholder="Buscar por nombre o codigo" />
+          <button type="submit" class="btn ghost">Filtrar</button>
+        </form>
+        <form action="{{ url_for('report_page') }}" method="get" class="history-filter">
+          <input type="hidden" name="course_filter" value="{{ course_filter }}" />
+          <input type="hidden" name="student_filter" value="{{ student_filter }}" />
+          <select name="student_id" required>
+            <option value="">Selecciona estudiante</option>
+            {% for item in students %}
+            <option value="{{ item['id'] }}" {% if selected_student_id|string == item['id']|string %}selected{% endif %}>
+              {{ item["course_name"] }} - {{ item["student_name"] }} ({{ item["student_code"] }})
+            </option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn primary">Ver informe</button>
+        </form>
+      </section>
+
+      {% if student and latest %}
+      <section class="panel report-summary">
+        <div>
+          <p class="tag">Estudiante seleccionado</p>
+          <h2>{{ student["student_name"] }}</h2>
+          <p><strong>Codigo:</strong> {{ student["student_code"] }} | <strong>Curso:</strong> {{ student["course_name"] }}</p>
+          <p>{{ student["course_description"] }}</p>
+          <p>{{ comparison.text }}</p>
+        </div>
+        <div class="score-card">
+          <span>Ultima nota</span>
+          <strong>{{ "%.2f"|format(latest.score) }}</strong>
+          <small>de {{ "%.2f"|format(latest.max_score) }}</small>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Retroalimentacion punto por punto</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Criterio</th><th>Puntaje</th><th>Maximo</th><th>Comentario</th></tr></thead>
+            <tbody>
+              {% for row in latest.rubric_breakdown %}
+              <tr><td>{{ row.get("criterion", "") }}</td><td>{{ row.get("score", "") }}</td><td>{{ row.get("max", "") }}</td><td>{{ row.get("comment", "") }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <h3>Retroalimentacion general</h3>
+        <p>{{ latest.feedback }}</p>
+      </section>
+
+      <section class="panel">
+        <h2>Rendimiento por actividades</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Actividad</th><th>Tipo</th><th>Semestre</th><th>Nota</th><th>Fecha</th></tr></thead>
+            <tbody>
+              {% for row in evaluations %}
+              <tr><td>{{ loop.index }}</td><td>{{ row["activity_name"] }}</td><td>{{ row["activity_type"] }}</td><td>{{ row["semester"] }}</td><td>{{ row["score"] }} / {{ row["max_score"] }}</td><td>{{ row["created_at"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {% elif student %}
+      <section class="panel"><p>Este estudiante aun no tiene evaluaciones cargadas.</p></section>
+      {% else %}
+      <section class="panel">
+        <h2>Evaluaciones recientes</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Curso</th><th>Estudiante</th><th>Evaluacion</th><th>Tipo</th><th>Nota</th><th>Fecha</th></tr></thead>
+            <tbody>
+              {% for row in latest_evaluations %}
+              <tr><td>{{ row["course_name"] }}</td><td>{{ row["student_name"] }}</td><td>{{ row["activity_name"] }}</td><td>{{ row["activity_type"] }}</td><td>{{ row["score"] }} / {{ row["max_score"] }}</td><td>{{ row["created_at"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

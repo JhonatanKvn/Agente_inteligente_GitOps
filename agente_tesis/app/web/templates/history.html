@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Historial</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <p class="tag">Seguimiento</p>
+        <h1>Historial por curso</h1>
+        <p class="subtitle">Consulta evaluaciones recientes, promedios y alertas.</p>
+      </header>
+      <nav class="tabs">
+        <a href="{{ url_for('students_page') }}">Estudiantes</a>
+        <a href="{{ url_for('evaluate_page') }}">Evaluacion</a>
+        <a href="{{ url_for('report_page') }}">Informe</a>
+        <a href="{{ url_for('history_page') }}">Historial</a>
+      </nav>
+
+      <section class="panel">
+        <form action="{{ url_for('history_page') }}" method="get" class="history-filter">
+          <input type="text" name="filter_name" placeholder="Filtrar estudiante" value="{{ filter_name }}" />
+          <select name="course_filter">
+            <option value="">Todos los cursos</option>
+            {% for course in courses %}
+            <option value="{{ course['course_name'] }}" {% if course_filter == course['course_name'] %}selected{% endif %}>{{ course["course_name"] }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn ghost">Filtrar</button>
+        </form>
+        <div class="stats-row">
+          <div class="stat"><span class="stat-label">Evaluaciones visibles</span><strong class="stat-value">{{ total_evaluations }}</strong></div>
+          <div class="stat"><span class="stat-label">Estudiantes visibles</span><strong class="stat-value">{{ total_students }}</strong></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Resumen por estudiante</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Curso</th><th>Estudiante</th><th>Codigo</th><th>Evaluaciones</th><th>Promedio</th><th>Mejor nota</th><th>Ultima fecha</th></tr></thead>
+            <tbody>
+              {% for row in summary %}
+              <tr><td>{{ row["course_name"] }}</td><td>{{ row["student_name"] }}</td><td>{{ row["student_code"] }}</td><td>{{ row["evaluations"] }}</td><td>{{ row["avg_score"] }}</td><td>{{ row["best_score"] }}</td><td>{{ row["last_date"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Alertas de no mejora</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Curso</th><th>Estudiante</th><th>Codigo</th><th>Semestre</th><th>Ultima actividad</th><th>Ultimas 3 notas</th><th>Alerta</th></tr></thead>
+            <tbody>
+              {% for row in alerts %}
+              <tr class="row-alert"><td>{{ row["course_name"] }}</td><td>{{ row["student_name"] }}</td><td>{{ row["student_code"] }}</td><td>{{ row["semester"] }}</td><td>{{ row["last_activity"] }}</td><td>{{ row["recent_scores"] }}</td><td>{{ row["alert"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Evaluaciones recientes</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Curso</th><th>Estudiante</th><th>Codigo</th><th>Evaluacion</th><th>Tipo</th><th>Semestre</th><th>Nota</th><th>Fecha</th></tr></thead>
+            <tbody>
+              {% for row in history %}
+              <tr><td>{{ row["id"] }}</td><td>{{ row["course_name"] }}</td><td>{{ row["student_name"] }}</td><td>{{ row["student_code"] }}</td><td>{{ row["activity_name"] }}</td><td>{{ row["activity_type"] }}</td><td>{{ row["semester"] }}</td><td>{{ row["score"] }} / {{ row["max_score"] }}</td><td>{{ row["created_at"] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

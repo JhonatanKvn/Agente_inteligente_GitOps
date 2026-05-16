@@ -1,0 +1,2 @@
+"""Capa de datos (SQLite)."""
+
