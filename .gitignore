@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+agente_tesis/__pycache__/
+agente_tesis/.env
+agente_tesis/logs/
